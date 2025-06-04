@@ -15,16 +15,9 @@ const errorHandler = require('./utils/errorHandler');
 
 const app = express();
 
-// Configuración de CORS
-const corsOptions = {
-    origin: process.env.CORS_ORIGIN || '*',
-    credentials: true,
-    optionsSuccessStatus: 200
-};
-
 // Middlewares
 app.use(express.json());
-app.use(cors(corsOptions));
+app.use(cors());
 
 // Rutas
 app.use('/api', authRoutes);
@@ -36,18 +29,11 @@ app.use('/api/encuestas', encuestaRoutes);
 
 // Ruta de prueba
 app.get('/api/status', (req, res) => {
-  res.json({ 
-    message: '🚀 API de PRIMING funcionando correctamente',
-    cors_origin: process.env.CORS_ORIGIN || '*',
-    environment: process.env.NODE_ENV || 'development'
-  });
+  res.json({ message: '🚀 API de PRIMING funcionando correctamente' });
 });
 
 // Middleware de manejo de errores
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`🌐 CORS configurado para: ${process.env.CORS_ORIGIN || '*'}`);
-});
+app.listen(PORT, () => console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`));
