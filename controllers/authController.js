@@ -63,19 +63,23 @@ const register = async (req, res, next) => {
         try {
             await client.query('BEGIN');
         
-            // Crear usuario
             const usuarioResult = await client.query(
                 'INSERT INTO usuarios (nombre, correo_electronico, contrasena, tipo_usuario) VALUES ($1, $2, $3, $4) RETURNING id',
                 [nombre, correo_electronico, hashedPassword, tipo_usuario]
-            );
+                );
         
             const userId = usuarioResult.rows[0].id;
         
             // Crear evaluador
-            await client.query(
-                'INSERT INTO evaluadores (usuario_id, codigo, tipo) VALUES ($1, $2, $3)',
-                [userId, codigo, tipo]
-            );
+            if (tipo_usuario === 'evaluador') {
+                if (!codigo || !tipo) {
+                    throw new Error('Código y tipo son obligatorios para evaluadores');
+                }
+                await client.query(
+                    'INSERT INTO evaluadores (usuario_id, codigo, tipo) VALUES ($1, $2, $3)',
+                    [userId, codigo, tipo]
+                );
+            }
 
             await client.query('COMMIT');
             client.release();
