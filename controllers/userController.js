@@ -189,9 +189,32 @@ const getUserInfo = async (req, res, next) => {
     }
 };
 
+// Obtener todos los usuarios (solo admin)
+const getAllUsers = async (req, res, next) => {
+    try {
+        // Solo permitir admins
+        if (req.user.tipo_usuario !== USER_TYPES.ADMIN) {
+            return res.status(403).json({
+                error: "Acceso denegado. Solo administradores pueden ver la lista de usuarios.",
+                code: ERROR_CODES.UNAUTHORIZED
+            });
+        }
+
+        const result = await db.query(
+            'SELECT id, nombre, correo_electronico, tipo_usuario FROM usuarios ORDER BY id ASC'
+        );
+
+        res.json(result.rows);
+    } catch (error) {
+        next(error);
+    }
+};
+
+
 module.exports = {
     getProfile,
     updateProfile,
     changePassword,
-    getUserInfo
+    getUserInfo,
+    getAllUsers
 };

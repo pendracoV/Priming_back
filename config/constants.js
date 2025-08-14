@@ -21,7 +21,7 @@ const ERROR_CODES = {
 
 // Otros constantes que puedan ser necesarias
 const USER_TYPES = {
-    ADMIN: 'admin',
+    ADMIN: 'administrador',
     EVALUADOR: 'evaluador',
     NINO: 'niño'
 };

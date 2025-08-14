@@ -8,5 +8,6 @@ router.get('/user', verifyToken, userController.getUserInfo);
 router.get('/perfil', verifyToken, userController.getProfile);
 router.put('/perfil', verifyToken, userController.updateProfile);
 router.put('/cambiar-password', verifyToken, userController.changePassword);
+router.get('/users', verifyToken, userController.getAllUsers);
 
 module.exports = router;

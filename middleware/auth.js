@@ -3,11 +3,19 @@ const { ERROR_CODES, USER_TYPES } = require('../config/constants');
 
 // Middleware para verificar el token de autenticación
 const verifyToken = (req, res, next) => {
-    const token = req.header("Authorization");
-    if (!token) return res.status(401).json({ 
-        error: "Acceso denegado",
-        code: ERROR_CODES.ACCESS_DENIED
-    });
+    let token = req.header("Authorization");
+
+    if (!token) {
+        return res.status(401).json({ 
+            error: "Acceso denegado",
+            code: ERROR_CODES.ACCESS_DENIED
+        });
+    }
+
+    // Si el token viene con prefijo "Bearer ", lo removemos
+    if (token.startsWith("Bearer ")) {
+        token = token.slice(7).trim();
+    }
 
     try {
         const verified = jwt.verify(token, process.env.JWT_SECRET);
