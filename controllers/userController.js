@@ -211,10 +211,71 @@ const getAllUsers = async (req, res, next) => {
 };
 
 
+const updateUserByAdmin = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { nombre, correo_electronico, tipo_usuario } = req.body;
+
+        if (!nombre || !correo_electronico || !tipo_usuario) {
+            return res.status(400).json({
+                error: "Todos los campos son obligatorios",
+                code: ERROR_CODES.MISSING_DATA
+            });
+        }
+
+        // Validar que no se repita el correo
+        const correoQuery = await db.query(
+            'SELECT id FROM usuarios WHERE correo_electronico = $1 AND id != $2',
+            [correo_electronico, id]
+        );
+        if (correoQuery.rows.length > 0) {
+            return res.status(400).json({
+                error: "El correo electrónico ya está en uso por otro usuario",
+                code: ERROR_CODES.EMAIL_EXISTS
+            });
+        }
+
+        await db.query(
+            'UPDATE usuarios SET nombre = $1, correo_electronico = $2, tipo_usuario = $3 WHERE id = $4',
+            [nombre, correo_electronico, tipo_usuario, id]
+        );
+
+        res.json({ message: "Usuario actualizado correctamente" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Eliminar un usuario (solo admin)
+const deleteUserByAdmin = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        // ⚠️ IMPORTANTE: Si tienes tablas dependientes (evaluadores/ninos), elimina primero esas relaciones
+        await db.query('DELETE FROM evaluadores WHERE usuario_id = $1', [id]);
+        await db.query('DELETE FROM ninos WHERE usuario_id = $1', [id]);
+
+        const result = await db.query('DELETE FROM usuarios WHERE id = $1 RETURNING *', [id]);
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({
+                error: "Usuario no encontrado",
+                code: ERROR_CODES.USER_NOT_FOUND
+            });
+        }
+
+        res.json({ message: "Usuario eliminado correctamente" });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getProfile,
     updateProfile,
     changePassword,
     getUserInfo,
-    getAllUsers
+    getAllUsers,
+    deleteUserByAdmin,
+    updateUserByAdmin
 };
