@@ -9,7 +9,6 @@ const evaluadorRoutes = require('./routes/evaluadorRoutes');
 const ninoRoutes = require('./routes/ninoRoutes');
 const juegoRoutes = require('./routes/juegoRoutes');
 const encuestaRoutes = require('./routes/encuestaRoutes');
-const ninoRoutes = require('./routes/ninoRoutes');
 
 // Importar manejador de errores
 const errorHandler = require('./utils/errorHandler');
