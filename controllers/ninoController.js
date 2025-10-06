@@ -461,10 +461,219 @@ const getEstadisticas = async (req, res, next) => {
     }
 };
 
+
+const validarPassword = async (req, res, next) => {
+    try {
+        const { nino_id, password } = req.body;
+
+        if (!nino_id || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Faltan datos: nino_id y password son requeridos',
+                code: ERROR_CODES.MISSING_DATA
+            });
+        }
+
+        // Obtener niño con su contraseña
+        const query = `
+            SELECT 
+                n.id, 
+                n.edad, 
+                n.grado, 
+                n.colegio, 
+                n.jornada,
+                u.id as usuario_id,
+                u.nombre,
+                u.correo_electronico,
+                u.contrasena
+            FROM ninos n
+            INNER JOIN usuarios u ON n.usuario_id = u.id
+            WHERE n.id = $1
+        `;
+        
+        const result = await db.query(query, [nino_id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Niño no encontrado',
+                code: ERROR_CODES.USER_NOT_FOUND
+            });
+        }
+
+        const nino = result.rows[0];
+
+        // Verificar contraseña
+        const bcrypt = require('bcrypt');
+        const passwordMatch = await bcrypt.compare(password, nino.contrasena);
+
+        if (!passwordMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Contraseña incorrecta',
+                code: ERROR_CODES.INVALID_PASSWORD
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Contraseña válida',
+            nino: {
+                id: nino.id,
+                nombre: nino.nombre,
+                edad: nino.edad,
+                grado: nino.grado,
+                colegio: nino.colegio,
+                jornada: nino.jornada
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Obtener progreso específico de cognados/pares_minimos
+const getProgresoEspecifico = async (req, res, next) => {
+    try {
+        const { nino_id } = req.params;
+        const { gameType, difficulty } = req.query;
+
+        if (!gameType || !difficulty) {
+            return res.status(400).json({
+                success: false,
+                message: 'Faltan parámetros: gameType y difficulty son requeridos',
+                code: ERROR_CODES.MISSING_DATA
+            });
+        }
+
+        // Verificar que el niño existe
+        const ninoCheck = await db.query('SELECT id FROM ninos WHERE id = $1', [nino_id]);
+        
+        if (ninoCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Niño no encontrado',
+                code: ERROR_CODES.USER_NOT_FOUND
+            });
+        }
+
+        // Obtener progreso
+        const query = `
+            SELECT 
+                game_type,
+                difficulty,
+                current_level,
+                accumulated_score,
+                last_played
+            FROM progreso_ninos
+            WHERE nino_id = $1 
+                AND game_type = $2 
+                AND difficulty = $3
+        `;
+        
+        const result = await db.query(query, [nino_id, gameType, difficulty]);
+
+        if (result.rows.length === 0) {
+            // No tiene progreso, devolver valores por defecto
+            return res.status(200).json({
+                success: true,
+                tiene_progreso: false,
+                data: {
+                    game_type: gameType,
+                    difficulty: difficulty,
+                    current_level: 1,
+                    accumulated_score: 200,
+                    last_played: null
+                }
+            });
+        }
+
+        const progreso = result.rows[0];
+        return res.status(200).json({
+            success: true,
+            tiene_progreso: true,
+            data: {
+                game_type: progreso.game_type,
+                difficulty: progreso.difficulty,
+                current_level: progreso.current_level,
+                accumulated_score: progreso.accumulated_score,
+                last_played: progreso.last_played
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Guardar progreso específico
+const saveProgresoEspecifico = async (req, res, next) => {
+    try {
+        const { nino_id } = req.params;
+        const { game_type, difficulty, current_level, accumulated_score } = req.body;
+
+        if (!game_type || !difficulty || current_level === undefined || accumulated_score === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: 'Faltan datos requeridos',
+                code: ERROR_CODES.MISSING_DATA,
+                required: ['game_type', 'difficulty', 'current_level', 'accumulated_score']
+            });
+        }
+
+        // Verificar que el niño existe
+        const ninoCheck = await db.query('SELECT id FROM ninos WHERE id = $1', [nino_id]);
+        
+        if (ninoCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Niño no encontrado',
+                code: ERROR_CODES.USER_NOT_FOUND
+            });
+        }
+
+        // Guardar progreso (UPSERT)
+        const query = `
+            INSERT INTO progreso_ninos 
+                (nino_id, game_type, difficulty, current_level, accumulated_score, last_played)
+            VALUES ($1, $2, $3, $4, $5, NOW())
+            ON CONFLICT (nino_id, game_type, difficulty)
+            DO UPDATE SET
+                current_level = $4,
+                accumulated_score = $5,
+                last_played = NOW(),
+                updated_at = NOW()
+            RETURNING *
+        `;
+        
+        const result = await db.query(query, [
+            nino_id,
+            game_type,
+            difficulty,
+            current_level,
+            accumulated_score
+        ]);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Progreso guardado correctamente',
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getPerfilNino,
     getProgresoNino,
     guardarProgresoJuego,
     getNivelActual,
-    getEstadisticas
+    getEstadisticas,
+    validarPassword,
+    getProgresoEspecifico,
+    saveProgresoEspecifico
+
 };

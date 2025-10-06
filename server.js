@@ -9,6 +9,7 @@ const evaluadorRoutes = require('./routes/evaluadorRoutes');
 const ninoRoutes = require('./routes/ninoRoutes');
 const juegoRoutes = require('./routes/juegoRoutes');
 const encuestaRoutes = require('./routes/encuestaRoutes');
+const ninoRoutes = require('./routes/ninoRoutes');
 
 // Importar manejador de errores
 const errorHandler = require('./utils/errorHandler');
@@ -26,6 +27,7 @@ app.use('/api/evaluador', evaluadorRoutes);
 app.use('/api/nino', ninoRoutes);
 app.use('/api/juegos', juegoRoutes);
 app.use('/api/encuestas', encuestaRoutes);
+app.use('/api/nino', ninoRoutes);
 
 // Ruta de prueba
 app.get('/api/status', (req, res) => {

@@ -1,14 +1,27 @@
 const express = require('express');
 const router = express.Router();
-const { verifyToken, verifyNino } = require('../middleware/auth');
-const ninoController = require('../controllers/ninoController');
+const { verifyToken } = require('../middleware/auth');
+const {
+    getPerfilNino,
+    getProgresoNino,
+    guardarProgresoJuego,
+    getNivelActual,
+    getEstadisticas,
+    validarPassword,              // NUEVO
+    getProgresoEspecifico,        // NUEVO
+    saveProgresoEspecifico        // NUEVO
+} = require('../controllers/ninoController');
 
-// Todas las rutas inician con /api/nino
+// Rutas existentes (ajusta según las que ya tengas)
+router.get('/perfil', verifyToken, getPerfilNino);
+router.get('/progreso', verifyToken, getProgresoNino);
+router.post('/juego/:juegoId/nivel/:nivelId/progreso', verifyToken, guardarProgresoJuego);
+router.get('/juego/:juegoId/nivel-actual', verifyToken, getNivelActual);
+router.get('/estadisticas', verifyToken, getEstadisticas);
 
-// Obtener datos del niño actual
-router.get('/perfil', verifyToken, verifyNino, ninoController.getPerfilNino);
-
-// Obtener progreso del niño en los juegos
-router.get('/progreso', verifyToken, verifyNino, ninoController.getProgresoNino);
+// NUEVAS RUTAS
+router.post('/validar-password', verifyToken, validarPassword);
+router.get('/:nino_id/progreso-especifico', verifyToken, getProgresoEspecifico);
+router.post('/:nino_id/progreso-especifico', verifyToken, saveProgresoEspecifico);
 
 module.exports = router;
