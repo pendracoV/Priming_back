@@ -129,7 +129,14 @@ const getNinosAsignados = async (req, res, next) => {
                 encuestas.fecha,
                 encuestas.num_intentos,
                 encuestas.num_sesion,
-                encuestas.observaciones
+                encuestas.observaciones,
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 FROM progreso_ninos 
+                        WHERE progreso_ninos.nino_id = ninos.id
+                    ) THEN true
+                    ELSE false
+                END AS tiene_juego
             FROM encuestas
             JOIN evaluadores ON encuestas.evaluador_id = evaluadores.id
             JOIN ninos ON encuestas.nino_id = ninos.id
